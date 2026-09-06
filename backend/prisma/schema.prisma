@@ -21,6 +21,7 @@ model Item{
   id    String  @id @default(cuid())
   audioPath String?
   originalFileName String
+  pairedTranscriptFileName String?
   status ItemStatus @default(PENDING)
 
   durationSeconds Float?
