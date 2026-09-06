@@ -8,6 +8,7 @@ import conditionsRouter from './routes/conditions'
 import audioRouter from './routes/audio'
 import spansRouter from './routes/spans'
 import itemTranscriptRouter from './routes/itemTranscript'
+import exportRouter from './routes/export'
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -22,6 +23,7 @@ app.use('/api/items', audioRouter)
 app.use('/api/pairing', pairingRouter)
 app.use('/api', spansRouter)
 app.use('/api/items', itemTranscriptRouter)
+app.use('/api/export', exportRouter)
 
 app.listen(port, () => {
   console.log(`Backend listening on port ${port}`);
