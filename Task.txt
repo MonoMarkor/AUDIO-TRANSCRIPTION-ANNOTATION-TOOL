@@ -1,0 +1,186 @@
+TASK: AUDIO TRANSCRIPTION ANNOTATION TOOL
+
+Expected Timeframe: 8-12 hours. 
+
+Submit (a Github repo) what you have at the end of that timeline. We are not expecting 100% results.
+
+You can use any existing tool such as existing git repo which you can fork it and tweak it to make this task.
+
+We are expecting that you should understand what AI tool is doing and not purely rely on the vibes.
+
+1. CONTEXT
+
+We build clinical speech-to-text for German university hospitals. Doctors dictate operation reports; a speech model produces a first-pass transcript. To measure how good that model is, and to fine-tune it, we need a gold standard: transcripts corrected and enriched by human annotators.
+
+Annotation is repetitive work. An annotator may go through a hundred recordings in a sitting, listening, correcting, and tagging. The quality of the tool decides whether that work takes two hours or six, and whether the resulting data is usable.
+
+Short recordings are not worth a human's time. Recordings longer than 15 seconds must be routed to a human annotator; 15 seconds and under are auto-rejected.
+
+Your task is to build the tool the annotators use. you can use any open source existing tool such as existing git repos which you can fork them if available and tune it from there. We are expecting that you must not rely 100% on vibe coding, you must understand what exactly happened under the hood.
+
+
+2. WHAT WE GIVE YOU
+
+Nothing. No audio, no transcripts. The tool must let a user upload their own.
+
+For development and for your demo, use any audio you like: record yourself, or take clips from a public corpus such as Mozilla Common Voice (German) or make medical domain audio samples. The tool does need to handle the categories in section 4.5.
+
+The AI transcript format we actually use is a JSON array of objects with two fields,
+
+"path" (the audio filename) and "label" (the model's transcript):
+
+
+[
+
+  { "path": "audio/880_NTX.wav", "label": "Kontrollierte Rueckenlagerung des Patienten..." },
+
+  { "path": "audio/881_TUR.wav", "label": "Steriles Abwaschen und Abdecken des OP-Gebietes..." }
+
+]
+
+
+
+3. STACK
+
+Backend: Node 22, TypeScript, Express, Prisma, PostgreSQL
+
+Frontend: Vue 3, Composition API, script setup
+
+Package manager: yarn or bun
+
+Database: via docker compose
+
+
+We ask for this stack because it is the one you would work in. If you have a strong reason to deviate on one piece, say so in your DESIGN.md. A good argument is fine, silence is not.
+
+
+4. REQUIREMENTS
+
+4.1 INGEST
+
+- Audio upload. Accept .wav, .mp3, .m4a. Single or multiple files per upload. Validate type and enforce a size limit; reject clearly rather than failing halfway. Store the file on disk or in a MinIO/S3-compatible bucket. The database stores a reference, not the bytes.
+
+- Transcript upload. Accept the JSON array format above. Also allow pasting a transcript for one item directly in the UI.
+
+- Pairing. Match transcript rows to uploaded audio by filename. Show what did not match, on both sides, and let the user pair or unpair manually. Do not silently drop rows.
+
+- Bad input. Malformed JSON, missing fields, duplicate paths, an audio file with no transcript, a transcript with no audio: report each, keep the good rows.
+
+
+4.2 WORK QUEUE 
+
+- List of items with filename, duration, status, and annotator.
+
+- Duration is read server-side from the audio file. Do not trust a duration the client sends.
+
+- Filter and sort by at least status and duration.
+
+
+4.3 AUDIO PLAYER
+
+Built for someone doing this all day:
+
+- Play/pause, seek, playback speed, jump back and forth.
+
+- Keyboard shortcuts for the actions above, documented in the UI.
+
+- Klick on a word and the audio jumps to the timestamp
+
+
+4.4 TRANSCRIPT EDITING
+
+
+- The uploaded AI transcript is the starting point.
+
+- The original is immutable. We compare against it to compute error rates. The corrected transcript is stored separately.
+
+- The annotator edits the corrected version freely.
+
+
+4.5 ANNOTATION
+
+
+The annotator marks spans of the transcript with a type and typed attributes. Six types:
+
+-  CRUD. Annotators can correct, add, or delete tokens as needed.
+
+- NUMBER. A spoken number. Attributes: rendering, either "digits" or "words"; normalized value. Example: "zwoelf" becomes 12, rendered as words.
+
+- FORMATTING_COMMAND. Spoken layout instructions. Attributes: command, one of newline, paragraph, period, comma, colon, dash, bracket_open, bracket_close; and whether the phrase is a command or the literal word ("neue Zeile" as an instruction versus someone actually saying those words).
+
+- SPELLED_OUT. Speaker spells a word letter by letter, possibly with a spelling alphabet ("C wie Caesar, E, F, U, R, O, X, I, M"). Attribute: resolved word, here Cefuroxim.
+
+- NAMED_ENTITY. Attribute: human names, organisation, place, date.
+
+- MEDICAL_TERM. Clinical vocabulary. Attributes: category, one of anatomy, procedure, diagnosis, drug, device; and free-text note so user can add more.
+
+- MEASUREMENT. A quantity with a unit. Attributes: value; unit, one of g, mg, ug, kg, ml, l, mmHg, IE, mm, cm, Ch; and the value normalized to a base unit.
+
+Worked example. The dictated sentence
+
+  "Single-Shot-Antibiose mit Cefuroxim eintausendfuenfhundert Milligramm neue Zeile Prolene sechs null fortlaufend"
+
+contains a MEDICAL_TERM (drug: Cefuroxim), a MEASUREMENT (1500 mg, which is 1.5 g), a FORMATTING_COMMAND (newline), a MEDICAL_TERM (device: Prolene), and a NUMBER spoken as words ("sechs null", meaning 6/0).
+
+Spans may be created, edited, and deleted. Overlapping spans are allowed. Decide whether you support them and say why in DESIGN.md.
+
+
+4.6 RECORDING CONDITIONS
+
+A panel per item, showing:
+
+- From the audio file header: duration, sample rate, channels, bit depth, and any bext or LIST INFO metadata if the recorder wrote it.
+
+- Derived speech rate: tokens divided by duration, in words per minute.
+
+- Derived distance estimate: a proxy for how close the speaker was to the microphone, from signal level (RMS, peak, or a level-to-noise-floor ratio). This is an estimate, not a measurement. Label it as one and document your method.
+
+Both derived values are prefilled suggestions. The annotator can override them, and the override is what gets exported.
+
+
+
+4.7 EXPORT
+
+Export the gold standard as JSONL, one item per line: audio reference, original transcript, corrected transcript, all annotation spans with their attributes, and the recording-condition values. Design the schema; justify it in DESIGN.md.
+
+5. OUT OF SCOPE
+
+Do not build these. Time spent on them counts against you.
+
+- Authentication, user management, roles, permissions
+
+- Multi-annotator workflows, inter-annotator agreement, review queues
+
+- Deployment, CI pipelines, cloud infrastructure
+
+- Running or training an actual speech model
+
+- Automatic pre-annotation (NER models, medical term lookup, and so on)
+
+Assume one annotator, one machine, localhost.
+
+
+
+6. DELIVERABLES
+
+A GitHub repository containing:
+
+1. The annotation web application.
+
+2. README.md: prerequisites, install, run. Someone on our team must get from git clone to a working app by following it literally, without asking you anything. State the Node version. "docker compose up" plus one command to start the app is the bar.
+
+3. A demo path: a seed script, or two or three small audio files committed to the repo, so a reviewer can see the tool working within a minute of starting it. A reviewer who has to source their own audio first will see less of your work.
+
+4. Tests, on the parts where a bug would actually hurt: the 15-second routing rule, the pairing logic, span persistence, unit normalization. We are not looking for a coverage percentage.
+
+5. DESIGN.md, one page: your data model and why; the tradeoffs you made; what you cut for time and what you would do next; anything you deliberately did differently from this brief.
+
+Partial submissions are expected and fine. A tool that does four of the six annotation types well beats one that does all six badly. Tell us what you cut and why. That judgment is part of what we are assessing.
+
+8. QUESTIONS
+
+If something in this brief is ambiguous, make a decision, note it in DESIGN.md, and move on. We would rather see how you resolve ambiguity than answer it for you.
+
+
+
+We're looking for clean, well-structured code - not perfection. A working solution with good code organization beats a feature-rich mess.

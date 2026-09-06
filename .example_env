@@ -1,0 +1,13 @@
+# PostgreSQL Configuration
+POSTGRES_DB=myapp_db
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres_secret_password
+
+# pgAdmin Configuration
+PGADMIN_DEFAULT_EMAIL=admin@example.com
+PGADMIN_DEFAULT_PASSWORD=pgadmin_secret_password
+
+# MinIO S3 Configuration
+MINIO_ROOT_USER=minioadmin
+MINIO_ROOT_PASSWORD=minioadmin_secret
+MINIO_BUCKET=my-app-bucket

@@ -1,0 +1,61 @@
+# Dependencies (both backend and frontend)
+node_modules/
+**/node_modules/
+
+# Yarn (Berry) internals
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+.pnp.*
+
+# Environment variables — never commit real secrets
+.env
+**/.env
+!.env.example
+!.example_env
+
+# Prisma generated client (regenerated via `prisma generate`, don't commit)
+backend/generated/
+**/generated/
+
+# Build output
+dist/
+build/
+**/dist/
+**/build/
+
+# TypeScript build info
+*.tsbuildinfo
+
+# Test coverage
+coverage/
+**/coverage/
+
+# Vite cache
+.vite/
+**/.vite/
+
+# Docker bind-mounted data volumes (created at runtime by `docker compose up`)
+postgresql_data/
+pgadmin_working_dir/
+minio_data/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+logs/
+
+# Editor / OS
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+
+# Uploaded/dev-only audio and transcripts (keep demo-data/ committed separately, see README)
+uploads/

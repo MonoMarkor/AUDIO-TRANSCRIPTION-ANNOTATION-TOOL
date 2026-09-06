@@ -1,0 +1,43 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider              = "prisma-client"
+  output                = "../generated/prisma"
+  moduleFormat           = "cjs"
+  generatedFileExtension = "ts"
+  importFileExtension    = ""
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Item{
+  id    String  @id @default(cuid())
+  audioPath String
+  originalFileName String
+  status ItemStatus @default(PENDING)
+
+  durationSeconds Float?
+  sampleRate  Int?
+  channels  Int?
+  bitDepth  Int?
+
+  originalTranscript  String?
+  correctedTranscript  String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum ItemStatus {
+  PENDING
+  IN_PROGRESS
+  DONE
+  REJECTED // for audio files less than 15s duration
+}
