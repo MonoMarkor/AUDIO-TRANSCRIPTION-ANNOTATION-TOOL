@@ -56,12 +56,15 @@ async function loadItem() {
 
   await nextTick()
 
-  player.bindEvents()
+  // player.bindEvents()
 
   audioEl.value?.load()
 }
 
-onMounted(loadItem)
+onMounted(async () => {
+  player.bindEvents()
+  await loadItem()
+})
 
 watch(itemId, async () => {
   await loadItem()
@@ -248,9 +251,24 @@ async function setStatus(status: string) {
 
 async function goToNextPending() {
   await fetchItems({ status: 'PENDING' })
-  const next = allItems.value.find((i) => i.id !== props.itemId)
-  if (next) emit('goToItem', next.id)
-  else alert('No other pending items.')
+
+  const pendingItems = allItems.value
+
+  if (pendingItems.length === 0) {
+    alert('No pending items.')
+    return
+  }
+
+  const currentIndex = pendingItems.findIndex(
+    (item) => item.id === props.itemId
+  )
+
+  const nextIndex =
+    currentIndex === -1
+      ? 0
+      : (currentIndex + 1) % pendingItems.length
+
+  emit('goToItem', pendingItems[nextIndex].id)
 }
 
 // ---------- Recording conditions overrides ----------
