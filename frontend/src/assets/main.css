@@ -178,3 +178,32 @@ tr:hover td {
   background-color: var(--bg-panel-raised);
   cursor: pointer;
 }
+
+.btn-icon {
+  background-color: var(--bg-panel-raised);
+  color: var(--text-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.btn-icon:hover {
+  background-color: var(--border-subtle);
+}
+
+.btn-icon-large {
+  width: 52px;
+  height: 52px;
+  background-color: var(--accent);
+  color: var(--accent-text);
+}
+
+.btn-icon-large:hover {
+  background-color: var(--accent-hover);
+}

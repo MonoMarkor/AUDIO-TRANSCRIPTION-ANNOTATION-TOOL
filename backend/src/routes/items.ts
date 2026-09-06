@@ -29,4 +29,20 @@ router.get('/', async (req, res) => {
   res.json({ items })
 })
 
+router.patch('/:id/status', async (req, res) => {
+  const { status } = req.body
+  const validStatuses = ['PENDING', 'IN_PROGRESS', 'DONE', 'REJECTED']
+  if (!validStatuses.includes(status)) {
+    return res.status(400).json({ error: 'Invalid status' })
+  }
+  const item = await prisma.item.update({ where: { id: req.params.id }, data: { status } })
+  res.json({ item })
+})
+
+router.get('/:id', async (req, res) => {
+  const item = await prisma.item.findUnique({ where: { id: req.params.id } })
+  if (!item) return res.status(404).json({ error: 'Item not found' })
+  res.json({ item })
+})
+
 export default router
