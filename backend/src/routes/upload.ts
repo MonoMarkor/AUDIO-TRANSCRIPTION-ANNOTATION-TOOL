@@ -62,13 +62,10 @@ router.post('/audio', upload.array('files'), async (req, res) => {
       const channels = metadata.format.numberOfChannels ?? null
       const bitDepth = metadata.format.bitsPerSample ?? null
 
-      // 2. Determine status based on duration
-      // const status = durationSeconds <= REJECT_THRESHOLD_SECONDS ? 'REJECTED' : 'PENDING'
       const status = determineInitialStatus(durationSeconds)
 
-      // Distance estimate — WAV only, since it needs raw PCM samples
+      // Distance estimate — WAV only
       let distanceEstimate: string | null = null
-      // if (file.mimetype === 'audio/wav' || file.mimetype === 'audio/x-wav')
       if (
         file.mimetype === 'audio/wav' ||
         file.mimetype === 'audio/x-wav' ||
@@ -81,7 +78,6 @@ router.post('/audio', upload.array('files'), async (req, res) => {
           const rms = computeRms(decoded.channelData[0])
           distanceEstimate = estimateDistanceFromRms(rms)
         } catch {
-          // Some WAV variants aren't decodable by this library; skip gracefully
           distanceEstimate = null
         }
       }
@@ -134,12 +130,12 @@ router.post('/audio', upload.array('files'), async (req, res) => {
         error: err instanceof Error ? err.message : 'Unknown error',
       })
     } finally {
-      // 5. Clean up local temp file regardless of success/failure
+      // 5. Clean up local temp file
       fs.unlink(file.path, () => {})
     }
   }
 
-  res.status(207).json({ results }) // 207 = Multi-Status, since some may succeed and some fail
+  res.status(207).json({ results })
 })
 
 export default router

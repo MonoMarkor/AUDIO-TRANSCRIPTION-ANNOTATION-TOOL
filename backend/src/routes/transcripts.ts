@@ -1,15 +1,9 @@
 import { Router } from 'express'
 import { prisma } from '../lib/prisma'
-import path from 'path'
 import { extractFilename, findDuplicateFilenames } from '../services/pairing'
 import { calculateSpeechRateWpm } from '../services/recordingConditions'
 
 const router = Router()
-
-interface TranscriptRow {
-  path: string
-  label: string
-}
 
 router.post('/', async (req, res) => {
   const body = req.body
@@ -19,7 +13,6 @@ router.post('/', async (req, res) => {
   }
 
   const results: { path: string; success: boolean; error?: string; itemId?: string }[] = []
-  // const seenPaths = new Set<string>()
 
   const duplicates = findDuplicateFilenames(body.map((row: any) => row?.path ?? ''))
 
@@ -39,19 +32,11 @@ router.post('/', async (req, res) => {
       continue
     }
 
-    // const filename = path.basename(row.path)
     const filename = extractFilename(row.path)
     if (duplicates.has(filename)) {
       results.push({ path: row.path, success: false, error: 'Duplicate path in this upload' })
       continue
     }
-
-    // // Detect duplicate paths within this same upload batch
-    // if (seenPaths.has(filename)) {
-    //   results.push({ path: row.path, success: false, error: 'Duplicate path in this upload' })
-    //   continue
-    // }
-    // seenPaths.add(filename)
 
     try {
       const item = await prisma.item.upsert({

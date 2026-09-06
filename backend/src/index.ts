@@ -19,10 +19,6 @@ app.use('/api/items', itemsRouter)
 app.use('/api/items', conditionsRouter)
 app.use('/api/items', audioRouter)
 app.use('/api/pairing', pairingRouter)
-// app.get('/api/hello', (req, res) => {
-//   const name = typeof req.query.name === 'string' ? req.query.name : 'World';
-//   res.json({ message: `Hello ${name}`});
-// });
 
 app.listen(port, () => {
   console.log(`Backend listening on port ${port}`);
