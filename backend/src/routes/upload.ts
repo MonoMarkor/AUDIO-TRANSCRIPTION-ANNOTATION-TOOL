@@ -58,10 +58,19 @@ router.post('/audio', upload.array('files'), async (req, res) => {
       })
 
       // 4. Only after MinIO succeeds, insert into Postgres
-      const item = await prisma.item.create({
-        data: {
+      const item = await prisma.item.upsert({
+        where: { originalFileName: file.originalname },
+        create: {
           audioPath: objectKey,
           originalFileName: file.originalname,
+          status,
+          durationSeconds,
+          sampleRate,
+          channels,
+          bitDepth,
+        },
+        update: {
+          audioPath: objectKey,
           status,
           durationSeconds,
           sampleRate,

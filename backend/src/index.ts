@@ -2,6 +2,8 @@ import express from 'express';
 import cors from 'cors';
 // import { PrismaClient } from '../generated/prisma'
 import uploadRouter from './routes/upload'
+import transcriptsRouter from './routes/transcripts'
+
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -9,6 +11,7 @@ const port = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 app.use('/api/upload', uploadRouter)
+app.use('/api/upload/transcripts', transcriptsRouter)
 
 // app.get('/api/hello', (req, res) => {
 //   const name = typeof req.query.name === 'string' ? req.query.name : 'World';

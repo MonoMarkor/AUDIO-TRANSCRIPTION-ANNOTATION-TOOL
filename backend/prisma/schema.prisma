@@ -19,7 +19,7 @@ datasource db {
 
 model Item{
   id    String  @id @default(cuid())
-  audioPath String
+  audioPath String?
   originalFileName String
   status ItemStatus @default(PENDING)
 
@@ -33,6 +33,8 @@ model Item{
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@unique([originalFileName])
 }
 
 enum ItemStatus {
