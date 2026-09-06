@@ -137,7 +137,7 @@ function toggleMatchedOnly() {
 
 <template>
   <div style="max-width: 1100px; margin: 0 auto; padding: 2rem;">
-    <h1>Annotation Tool</h1>
+    <h1>Dashboard</h1>
 
     <!-- Upload section -->
     <div class="panel" style="margin-bottom: 1.5rem;">
@@ -217,12 +217,10 @@ function toggleMatchedOnly() {
           </tr>
         </thead>
         <tbody>
-          <!-- <tr v-for="item in items" :key="item.id" @click="emit('selectItem', item.id)"> -->
           <tr v-for="item in displayedItems" :key="item.id" @click="emit('selectItem', item.id)">
             <td>{{ item.originalFileName }}</td>
             <td>{{ formatDuration(item.durationSeconds) }}</td>
             <td><span class="badge" :class="statusBadgeClass(item.status)">{{ item.status }}</span></td>
-            <!-- <td>{{ item.audioPath && item.originalTranscript ? 'Yes' : 'No' }}</td> -->
              <td>
               <span class="badge" :class="pairedBadgeClass(item)">
                 {{ item.audioPath && item.originalTranscript ? 'Yes' : 'No' }}
