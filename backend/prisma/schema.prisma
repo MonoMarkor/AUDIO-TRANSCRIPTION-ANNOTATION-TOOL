@@ -39,6 +39,8 @@ model Item{
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  spans AnnotationSpan[]
+
   @@unique([originalFileName])
 }
 
@@ -47,4 +49,30 @@ enum ItemStatus {
   IN_PROGRESS
   DONE
   REJECTED // for audio files less than 15s duration
+}
+
+model AnnotationSpan {
+  id          String   @id @default(cuid())
+  itemId      String
+  item        Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  type        SpanType
+  startOffset Int
+  endOffset   Int
+
+  attributes  Json
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([itemId])
+}
+
+enum SpanType {
+  NUMBER
+  FORMATTING_COMMAND
+  SPELLED_OUT
+  NAMED_ENTITY
+  MEDICAL_TERM
+  MEASUREMENT
 }
