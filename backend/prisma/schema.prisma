@@ -28,6 +28,10 @@ model Item{
   sampleRate  Int?
   channels  Int?
   bitDepth  Int?
+  distanceEstimate         String?   // "close" | "medium" | "far"
+  distanceEstimateOverride String?
+  speechRateWpm            Float?
+  speechRateWpmOverride    Float?
 
   originalTranscript  String?
   correctedTranscript  String?

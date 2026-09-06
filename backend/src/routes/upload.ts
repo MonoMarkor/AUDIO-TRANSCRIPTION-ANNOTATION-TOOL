@@ -6,10 +6,25 @@ import fs from 'fs'
 import { prisma } from '../lib/prisma'
 import { minioClient, BUCKET_NAME } from '../lib/minio'
 import { determineInitialStatus } from '../services/itemStatus'
+import { decode } from 'wav-decoder'
+import {
+  calculateSpeechRateWpm,
+  computeRms,
+  estimateDistanceFromRms,
+} from '../services/recordingConditions'
 
 const router = Router()
 
-const ALLOWED_TYPES = ['audio/wav', 'audio/x-wav', 'audio/mpeg', 'audio/mp4', 'audio/x-m4a']
+// const ALLOWED_TYPES = ['audio/wav', 'audio/x-wav', 'audio/mpeg', 'audio/mp4', 'audio/x-m4a']
+const ALLOWED_TYPES = [
+  'audio/wav',
+  'audio/x-wav',
+  'audio/wave',
+  'audio/vnd.wave',
+  'audio/mpeg',
+  'audio/mp4',
+  'audio/x-m4a',
+]
 const MAX_SIZE_BYTES = 100 * 1024 * 1024 // 100MB, adjust as needed
 // const REJECT_THRESHOLD_SECONDS = 15
 
@@ -51,6 +66,26 @@ router.post('/audio', upload.array('files'), async (req, res) => {
       // const status = durationSeconds <= REJECT_THRESHOLD_SECONDS ? 'REJECTED' : 'PENDING'
       const status = determineInitialStatus(durationSeconds)
 
+      // Distance estimate — WAV only, since it needs raw PCM samples
+      let distanceEstimate: string | null = null
+      // if (file.mimetype === 'audio/wav' || file.mimetype === 'audio/x-wav')
+      if (
+        file.mimetype === 'audio/wav' ||
+        file.mimetype === 'audio/x-wav' ||
+        file.mimetype === 'audio/wave' ||
+        file.mimetype === 'audio/vnd.wave'
+      ) {
+        try {
+          const buffer = fs.readFileSync(file.path)
+          const decoded = await decode(buffer)
+          const rms = computeRms(decoded.channelData[0])
+          distanceEstimate = estimateDistanceFromRms(rms)
+        } catch {
+          // Some WAV variants aren't decodable by this library; skip gracefully
+          distanceEstimate = null
+        }
+      }
+
       // 3. Upload to MinIO
       const objectKey = `audio/${randomUUID()}-${file.originalname}`
       await minioClient.fPutObject(BUCKET_NAME, objectKey, file.path, {
@@ -68,6 +103,7 @@ router.post('/audio', upload.array('files'), async (req, res) => {
           sampleRate,
           channels,
           bitDepth,
+          distanceEstimate,
         },
         update: {
           audioPath: objectKey,
@@ -76,10 +112,21 @@ router.post('/audio', upload.array('files'), async (req, res) => {
           sampleRate,
           channels,
           bitDepth,
+          distanceEstimate,
         },
       })
 
-      results.push({ success: true, filename: file.originalname, item })
+      let finalItem = item
+      if (item.originalTranscript) {
+        const speechRateWpm = calculateSpeechRateWpm(item.originalTranscript, durationSeconds)
+        finalItem = await prisma.item.update({
+          where: { id: item.id },
+          data: { speechRateWpm },
+        })
+      }
+
+      results.push({ success: true, filename: file.originalname, item: finalItem })
+
     } catch (err) {
       results.push({
         success: false,

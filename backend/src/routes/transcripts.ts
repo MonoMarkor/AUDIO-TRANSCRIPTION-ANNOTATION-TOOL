@@ -2,7 +2,7 @@ import { Router } from 'express'
 import { prisma } from '../lib/prisma'
 import path from 'path'
 import { extractFilename, findDuplicateFilenames } from '../services/pairing'
-
+import { calculateSpeechRateWpm } from '../services/recordingConditions'
 
 const router = Router()
 
@@ -66,7 +66,15 @@ router.post('/', async (req, res) => {
           correctedTranscript: row.label,
         },
       })
-      results.push({ path: row.path, success: true, itemId: item.id })
+      let finalItem = item
+      if (item.durationSeconds) {
+        const speechRateWpm = calculateSpeechRateWpm(row.label, item.durationSeconds)
+        finalItem = await prisma.item.update({
+          where: { id: item.id },
+          data: { speechRateWpm },
+        })
+      }
+      results.push({ path: row.path, success: true, itemId: finalItem.id })
     } catch (err) {
       results.push({
         path: row.path,
