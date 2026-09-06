@@ -1,0 +1,180 @@
+:root {
+  /* Backgrounds */
+  --bg-base: #1e1c1a;
+  --bg-panel: #2a2724;
+  --bg-panel-raised: #34302c;
+  --border-subtle: #45403a;
+
+  /* Text */
+  --text-primary: #f0ede8;
+  --text-secondary: #a8a29a;
+  --text-input: #ffffff;
+
+  /* Accent */
+  --accent: #e8b923;
+  --accent-hover: #f5c93a;
+  --accent-text: #1a1a1a;
+
+  /* Status colors */
+  --status-pending: #6b9fd8;
+  --status-in-progress: #e8b923;
+  --status-done: #7fb87f;
+  --status-rejected: #c96a6a;
+
+  /* Span highlight colors, one per annotation type */
+  --span-number: #7fb8d8;
+  --span-formatting: #a89fd8;
+  --span-spelled-out: #d89fc4;
+  --span-named-entity: #9fd8a8;
+  --span-medical-term: #d8b87f;
+  --span-measurement: #d89f7f;
+
+  --font-main: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-main);
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+#app {
+  min-height: 100vh;
+}
+
+h1, h2, h3, h4 {
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 0.75rem;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* Panels / cards */
+.panel {
+  background-color: var(--bg-panel);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 1.25rem;
+}
+
+.panel-raised {
+  background-color: var(--bg-panel-raised);
+  border-radius: 6px;
+  padding: 1rem;
+}
+
+/* Buttons */
+.btn {
+  background-color: var(--accent);
+  color: var(--accent-text);
+  font-family: var(--font-main);
+  font-weight: 600;
+  font-size: 0.9rem;
+  border: none;
+  border-radius: 6px;
+  padding: 0.6rem 1.2rem;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.btn:hover:not(:disabled) {
+  background-color: var(--accent-hover);
+}
+
+.btn:disabled {
+  background-color: var(--border-subtle);
+  color: var(--text-secondary);
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background-color: transparent;
+  color: var(--text-primary);
+  border: 1px solid var(--border-subtle);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background-color: var(--bg-panel-raised);
+}
+
+/* Form elements */
+input, textarea, select {
+  background-color: var(--bg-panel-raised);
+  color: var(--text-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  padding: 0.5rem 0.75rem;
+  font-family: var(--font-main);
+  font-size: 0.9rem;
+}
+
+input:focus, textarea:focus, select:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+label {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  display: block;
+  margin-bottom: 0.3rem;
+}
+
+/* Status badges, used in the work queue */
+.badge {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--accent-text);
+}
+
+.badge-pending { background-color: var(--status-pending); }
+.badge-in-progress { background-color: var(--status-in-progress); }
+.badge-done { background-color: var(--status-done); }
+.badge-rejected { background-color: var(--status-rejected); }
+
+/* Tables, used in the work queue */
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th, td {
+  text-align: left;
+  padding: 0.6rem 0.8rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+th {
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+tr:hover td {
+  background-color: var(--bg-panel-raised);
+  cursor: pointer;
+}

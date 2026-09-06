@@ -1,41 +1,22 @@
-<script setup lang='ts'>
-import { ref, onMounted } from 'vue'
+<script setup lang="ts">
+import { ref } from 'vue'
+import Dashboard from './components/Dashboard.vue'
 
-// reactive state
-const count = ref(0)
+const selectedItemId = ref<string | null>(null)
 
-const data = ref<MessageData | null>(null)
-
-interface MessageData
-{
-    message: string
+function handleSelectItem(itemId: string) {
+  selectedItemId.value = itemId
 }
 
-// functions that mutate state and trigger updates
-function increment() {
-  count.value++
+function backToDashboard() {
+  selectedItemId.value = null
 }
-
-async function fetchMessage(): Promise<MessageData> {
-  const res = await fetch(`http://localhost:3000/api/hello?name=Piush`)
-  const json = await res.json()
-  return json
-}
-
-// lifecycle hooks
-// onMounted(async () => {
-//   console.log(`The initial count is ${count.value}.`);
-//   const messageResponse = await fetchMessage();
-//   data.value = messageResponse;
-// })
-
-onMounted(async () => {
-  console.log(`The initial count is ${count.value}.`)
-  data.value = await fetchMessage()
-})
 </script>
 
 <template>
-  <button @click="increment">Count is: {{ count }}</button>
-  <p>{{data?.message}}</p>
+  <Dashboard v-if="!selectedItemId" @select-item="handleSelectItem" />
+  <div v-else class="panel" style="margin: 2rem;">
+    <button class="btn-secondary btn" @click="backToDashboard">← Back to queue</button>
+    <p style="margin-top: 1rem;">Workspace for item: {{ selectedItemId }} (coming next)</p>
+  </div>
 </template>
