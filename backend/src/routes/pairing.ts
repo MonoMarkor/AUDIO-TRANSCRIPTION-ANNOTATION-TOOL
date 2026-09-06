@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import { prisma } from '../lib/prisma'
+import { validateManualPairing } from '../services/pairing'
 
 const router = Router()
 
