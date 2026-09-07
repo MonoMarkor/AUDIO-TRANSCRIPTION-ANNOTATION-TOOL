@@ -383,9 +383,11 @@ onUnmounted(() => {
 
           <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 1rem;">
             Click a word to jump the audio there. Click and drag across words to select a range, then press
-            <strong>W</strong>=Number, <strong>E</strong>=Formatting, <strong>R</strong>=Spelled Out,
-            <strong>A</strong>=Named Entity, <strong>S</strong>=Medical Term, <strong>D</strong>=Measurement,
-            or click a button below. Esc clears selection. <strong>Tab</strong> switches between Annotate and Edit Text.
+            <template v-for="(t, idx) in SPAN_TYPES" :key="t.type">
+              <strong :style="`color: var(${t.colorVar});`">{{ t.key.toUpperCase() }}</strong>={{ t.label
+              }}<span v-if="idx < SPAN_TYPES.length - 1">, </span>
+            </template>
+            , or click a button below. Esc clears selection. <strong>Tab</strong> switches between Annotate and Edit Text.
           </p>
 
           <!-- Tagging form -->
@@ -396,7 +398,10 @@ onUnmounted(() => {
                 v-for="t in SPAN_TYPES"
                 :key="t.type"
                 class="btn-secondary btn"
-                :style="pendingType === t.type ? `border-color: var(${t.colorVar});` : ''"
+                :style="[
+                  `border-color: var(${t.colorVar}); color: var(${t.colorVar});`,
+                  pendingType === t.type ? `background-color: var(${t.colorVar}); color: #1a1a1a;` : '',
+                ]"
                 @click="selectType(t.type)"
               >
                 {{ t.label }} ({{ t.key.toUpperCase() }})
