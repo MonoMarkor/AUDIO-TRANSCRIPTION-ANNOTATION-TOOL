@@ -68,6 +68,61 @@ containing multi-word phrases as a single span.
   (>0.1 close, >0.03 medium, else far) were chosen informally during testing,
   not calibrated against real recordings.
 
+## Frontend
+
+Two views, no router. `App.vue` toggles between a Dashboard and an
+AnnotatorWorkspace component based on a single `selectedItemId` ref, rather
+than using `vue-router` — justified by the brief's "one annotator, one
+machine" scope; a router added complexity with no real benefit at this size.
+Pinia was likewise left out; a handful of composables (`useItems`,
+`useItemDetail`, `useSpans`, `useAudioPlayer`) each own their own local
+reactive state, which is sufficient for two views with no cross-cutting
+global state.
+
+- **Annotate vs. Edit Text are separate tabs**, not one combined editable
+  surface. Live-editing text (contenteditable/cursor tracking) while also
+  rendering interactive colored span highlights and click-to-seek on the
+  same surface is a substantially harder browser-editor problem than the
+  time budget allows. Annotate is a read-only, word-tokenized view (click a
+  word to seek, drag across words to select and tag); Edit Text is a plain
+  textarea for corrections, wired to the backend's span-shifting endpoint via
+  the `beforeinput` event delta. Switching away from Edit Text auto-saves.
+
+- **Span tagging snaps to whole-word boundaries**, not exact character
+  offsets from the browser's Selection API. A drag-selection is rounded to
+  the nearest fully-covered words. This sacrifices sub-word span precision
+  (can't tag part of a word) in exchange for a much simpler, more reliable
+  selection implementation, and unifies the click-to-seek and tag-selection
+  interactions on the same word-rendering approach.
+
+- **Click-to-seek timestamps are estimated**, not real. The input data
+  format has no per-word timestamps, so word start times are approximated by
+  evenly distributing words across the audio's known duration
+  (`wordIndex / totalWords * duration`). This is a rough approximation, not
+  forced alignment — flagged here as a known limitation, not a bug.
+
+- **Colored text while editing** is implemented via a layered
+  textarea-over-backdrop trick (invisible textarea with a visible caret,
+  positioned over a `div` rendering the same text with colored span
+  backgrounds behind it, scroll-synced), since a native `<textarea>` cannot
+  render styled inline text directly. Colors may render approximately
+  against stale span offsets in the moment between typing and saving, since
+  the backdrop is built from spans fetched at last save, not live-recomputed
+  per keystroke.
+
+- **Manual pairing UI** offers two dropdowns (audio-only items,
+  transcript-only items) plus a Pair button, and a small list of
+  already-manually-paired items each with an Unpair button — a minimal
+  direct mapping onto the backend's `/api/pairing/manual` and
+  `/api/pairing/unpair` endpoints, no drag-and-drop or fuzzy-match
+  suggestions.
+
+- **Keyboard shortcuts**: W/E/R/A/S/D tag the current selection with one of
+  the five span types (chosen for left-hand reachability), Esc clears the
+  current selection, Tab switches between Annotate and Edit Text, Ctrl/Cmd+S
+  saves the transcript while in Edit Text, Shift+Enter jumps to the next
+  pending item. All are documented inline in the UI, not just in this file.
+
 ## What's cut / would do next
 
 - No HTTP range-request support on audio streaming — the whole file is sent
@@ -77,7 +132,23 @@ containing multi-word phrases as a single span.
   than attempting to shrink/salvage a partially-overlapped span.
 - No pagination on the work queue or export — fine at demo scale, would need
   it for a real hundred-recordings-per-sitting workload.
+- Sub-word span selection (tagging part of a single word) is not supported;
+  spans always snap to whole-word boundaries.
+- Click-to-seek uses estimated, evenly-distributed word timestamps rather
+  than real per-word alignment; a future version could run forced alignment
+  (e.g. Montreal Forced Aligner) at ingest time to produce real timestamps.
+- No visual UI for overlapping/nested spans, consistent with the backend
+  decision to disallow them.
 
 ## Deviations from the brief
 
 None beyond what's listed above as deliberate, documented trade-offs.
+
+## Extra
+
+- **`.env` files are committed**, not gitignored. Normally these would be
+  excluded, but all values here are throwaway local-dev defaults that only
+  work inside the isolated `docker compose` network on localhost — there's
+  no real secret to protect. Committing them directly guarantees `docker
+  compose up` works immediately after `git clone`, with no extra copy-the-
+  example step that could be missed or fumbled.

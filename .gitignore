@@ -11,11 +11,7 @@ node_modules/
 !.yarn/versions
 .pnp.*
 
-# Environment variables — never commit real secrets
-.env
-**/.env
-!.env.example
-!.example_env
+# .env files are committed for this assessment repo — see DESIGN.md
 
 # Prisma generated client (regenerated via `prisma generate`, don't commit)
 backend/generated/
