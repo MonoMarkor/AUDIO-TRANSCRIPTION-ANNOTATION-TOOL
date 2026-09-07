@@ -51,6 +51,7 @@ yarn-error.log*
 logs/
 
 # Editor / OS
+**/.vscode
 .vscode/*
 !.vscode/extensions.json
 .idea/

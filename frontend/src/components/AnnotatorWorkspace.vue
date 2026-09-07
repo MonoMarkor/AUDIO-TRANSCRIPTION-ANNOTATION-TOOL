@@ -170,11 +170,19 @@ function selectType(type: string) {
 }
 
 function onKeydown(e: KeyboardEvent) {
+
   if (e.shiftKey && e.key === 'Enter') {
     e.preventDefault()
     goToNextPending()
     return
   }
+
+  if (e.key === 'Tab') {
+    e.preventDefault()
+    activeTab.value = activeTab.value === 'annotate' ? 'edit' : 'annotate'
+    return
+  }
+
   if (activeTab.value !== 'annotate') return
   const target = e.target as HTMLElement
   if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT') return
@@ -183,10 +191,12 @@ function onKeydown(e: KeyboardEvent) {
     clearSelection()
     return
   }
+
   const config = SPAN_TYPES.find((t) => t.key === e.key.toLowerCase())
   if (config && selectionRange.value) {
     selectType(config.type)
   }
+
 }
 
 async function submitSpan() {
@@ -375,7 +385,7 @@ onUnmounted(() => {
             Click a word to jump the audio there. Click and drag across words to select a range, then press
             <strong>W</strong>=Number, <strong>E</strong>=Formatting, <strong>R</strong>=Spelled Out,
             <strong>A</strong>=Named Entity, <strong>S</strong>=Medical Term, <strong>D</strong>=Measurement,
-            or click a button below. Esc clears selection.
+            or click a button below. Esc clears selection. <strong>Tab</strong> switches between Annotate and Edit Text.
           </p>
 
           <!-- Tagging form -->
