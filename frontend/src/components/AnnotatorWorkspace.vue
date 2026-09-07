@@ -171,6 +171,12 @@ function selectType(type: string) {
 
 function onKeydown(e: KeyboardEvent) {
 
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+    e.preventDefault()
+    if (activeTab.value === 'edit') saveTranscriptEdit()
+    return
+  }
+
   if (e.shiftKey && e.key === 'Enter') {
     e.preventDefault()
     goToNextPending()
@@ -250,8 +256,10 @@ async function saveTranscriptEdit() {
   await fetchItem()
 }
 
-watch(activeTab, (tab) => {
-  if (tab === 'edit') editableText.value = item.value?.correctedTranscript || ''
+watch(activeTab, async (newTab, oldTab) => {
+  if (oldTab === 'edit') {
+    await saveTranscriptEdit()
+  }
 })
 
 // ---------- Status + navigation ----------
@@ -305,6 +313,37 @@ onUnmounted(() => {
   document.removeEventListener('mouseup', onWordMouseUp)
   document.removeEventListener('keydown', onKeydown)
 })
+
+const backdropEl = ref<HTMLDivElement | null>(null)
+
+function escapeHtml(str: string) {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+}
+
+const highlightedHtml = computed(() => {
+  const text = editableText.value
+  const sorted = [...spans.value].sort((a, b) => a.startOffset - b.startOffset)
+  let html = ''
+  let cursor = 0
+
+  for (const span of sorted) {
+    if (span.startOffset < cursor || span.startOffset > text.length) continue
+    const end = Math.min(span.endOffset, text.length)
+    const config = SPAN_TYPES.find((t) => t.type === span.type)
+    html += escapeHtml(text.slice(cursor, span.startOffset))
+    html += `<span style="background-color: var(${config?.colorVar}); color: #1a1a1a; border-radius: 3px;">${escapeHtml(text.slice(span.startOffset, end))}</span>`
+    cursor = end
+  }
+  html += escapeHtml(text.slice(cursor)) + '\n'
+  return html
+})
+
+function syncBackdropScroll() {
+  if (backdropEl.value && textareaEl.value) {
+    backdropEl.value.scrollTop = textareaEl.value.scrollTop
+    backdropEl.value.scrollLeft = textareaEl.value.scrollLeft
+  }
+}
 </script>
 
 <template>
@@ -436,19 +475,24 @@ onUnmounted(() => {
           </div>
         </div>
 
-        <div v-else>
+      <div v-else>
+        <div class="editor-wrap">
+          <div class="editor-backdrop" ref="backdropEl" v-html="highlightedHtml"></div>
           <textarea
             ref="textareaEl"
             v-model="editableText"
             @beforeinput="onBeforeInput"
+            @scroll="syncBackdropScroll"
             rows="6"
-            style="width: 100%; font-size: 1rem;"
+            class="editor-textarea"
           ></textarea>
-          <button class="btn" style="margin-top: 0.75rem;" @click="saveTranscriptEdit">Save changes</button>
-          <p style="color: var(--text-secondary); font-size: 0.85rem;">
-            Editing here may shift or invalidate existing tagged spans if the edit overlaps them.
-          </p>
         </div>
+        <button class="btn" style="margin-top: 0.75rem;" @click="saveTranscriptEdit">Save changes (Ctrl+S)</button>
+        <p style="color: var(--text-secondary); font-size: 0.85rem;">
+          Editing here may shift or invalidate existing tagged spans if the edit overlaps them.
+          Switching tabs auto-saves your changes.
+        </p>
+      </div>
       </div>
 
       <!-- Side panel: recording conditions -->
@@ -487,3 +531,40 @@ onUnmounted(() => {
     </button>
   </div>
 </template>
+
+<style scoped>
+.editor-wrap {
+  position: relative;
+}
+.editor-backdrop {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  padding: 0.75rem;
+  border: 1px solid transparent;
+  font-family: var(--font-main);
+  font-size: 1rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow: hidden;
+  color: var(--text-input);
+  pointer-events: none;
+  box-sizing: border-box;
+}
+.editor-textarea {
+  position: relative;
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  font-family: var(--font-main);
+  font-size: 1rem;
+  line-height: 1.6;
+  background: transparent;
+  color: transparent;
+  caret-color: var(--text-input);
+  resize: vertical;
+  box-sizing: border-box;
+}
+</style>
