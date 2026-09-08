@@ -181,8 +181,16 @@ function onKeydown(e: KeyboardEvent) {
     return
   }
 
-  if (activeTab.value !== 'annotate') return
   const target = e.target as HTMLElement
+  const isTyping = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT'
+
+  if (e.key === ' ' && !isTyping) {
+    e.preventDefault()
+    player.togglePlay()
+    return
+  }
+
+  if (activeTab.value !== 'annotate') return
   if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT') return
 
   if (e.key === 'Escape') {
