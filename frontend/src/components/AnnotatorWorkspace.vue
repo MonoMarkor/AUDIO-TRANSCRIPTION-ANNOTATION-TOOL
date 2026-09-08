@@ -37,6 +37,16 @@ const player = useAudioPlayer(audioEl)
 const activeTab = ref<'annotate' | 'edit'>('annotate')
 const editableText = ref('')
 
+const displayTime = ref(0)
+let rafId: number | null = null
+
+function tick() {
+  if (audioEl.value) {
+    displayTime.value = audioEl.value.currentTime
+  }
+  rafId = requestAnimationFrame(tick)
+}
+
 async function loadItem() {
   player.reset()
   player.playing.value = false
@@ -61,6 +71,7 @@ async function loadItem() {
 onMounted(async () => {
   player.bindEvents()
   await loadItem()
+  rafId = requestAnimationFrame(tick)
 })
 
 watch(itemId, async () => {
@@ -326,6 +337,7 @@ document.addEventListener('keydown', onKeydown)
 onUnmounted(() => {
   document.removeEventListener('mouseup', onWordMouseUp)
   document.removeEventListener('keydown', onKeydown)
+  if (rafId) cancelAnimationFrame(rafId)
 })
 
 const backdropEl = ref<HTMLDivElement | null>(null)
@@ -396,10 +408,27 @@ function syncBackdropScroll() {
           <select v-model.number="player.playbackRate.value" @change="player.setSpeed(player.playbackRate.value)" style="margin-left: 1rem;">
             <option v-for="rate in [0.5, 0.75, 1, 1.25, 1.5, 2.0]" :key="rate" :value="rate">{{ rate }}x</option>
           </select>
-          <span style="position: absolute; right: 0; color: var(--text-secondary); font-variant-numeric: tabular-nums;">
-            {{ player.currentTime.value.toFixed(1) }}s / {{ (player.duration.value || item?.durationSeconds || 0).toFixed(1) }}s
+
+        </div>
+
+        <div style="margin-top: 0.75rem; display: flex; align-items: center; gap: 0.75rem;">
+          <span style="color: var(--text-secondary); font-size: 0.8rem; font-variant-numeric: tabular-nums; min-width: 3.5rem;">
+            {{ displayTime.toFixed(1) }}s
+          </span>
+          <input
+            type="range"
+            class="seek-bar"
+            min="0"
+            :max="player.duration.value || item?.durationSeconds || 0"
+            step="0.01"
+            :value="displayTime"
+            @input="player.seek(Number(($event.target as HTMLInputElement).value))"
+          />
+          <span style="color: var(--text-secondary); font-size: 0.8rem; font-variant-numeric: tabular-nums; min-width: 3.5rem; text-align: right;">
+            {{ (player.duration.value || item?.durationSeconds || 0).toFixed(1) }}s
           </span>
         </div>
+
       </div>
 
       <!-- Compact recording conditions row -->
@@ -611,5 +640,46 @@ function syncBackdropScroll() {
   overflow: hidden;
   overflow-wrap: anywhere;
   box-sizing: border-box;
+}
+
+.seek-bar {
+  flex: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--border-subtle);
+  outline: none;
+  cursor: pointer;
+}
+
+.seek-bar::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  transition: transform 0.1s ease;
+}
+
+.seek-bar::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+.seek-bar::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: none;
+  cursor: pointer;
+}
+
+.seek-bar::-moz-range-progress {
+  background: var(--accent);
+  height: 6px;
+  border-radius: 3px;
 }
 </style>
