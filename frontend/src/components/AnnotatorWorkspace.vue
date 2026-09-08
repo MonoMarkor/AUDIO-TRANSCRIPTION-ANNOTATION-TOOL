@@ -47,6 +47,10 @@ function tick() {
   rafId = requestAnimationFrame(tick)
 }
 
+const singleWordSelected = ref(false)
+let holdTimer: ReturnType<typeof setTimeout> | null = null
+const HOLD_THRESHOLD_MS = 250
+
 async function loadItem() {
   player.reset()
   player.playing.value = false
@@ -121,6 +125,15 @@ function onWordMouseDown(index: number) {
   isDragging.value = true
   anchorIndex.value = index
   hoverIndex.value = index
+  singleWordSelected.value = false
+
+  if (holdTimer) clearTimeout(holdTimer)
+  holdTimer = setTimeout(() => {
+    // Only confirm as a single-word hold if the mouse never moved to another word
+    if (isDragging.value && hoverIndex.value === anchorIndex.value) {
+      singleWordSelected.value = true
+    }
+  }, HOLD_THRESHOLD_MS)
 }
 
 function onWordMouseEnter(index: number) {
@@ -130,10 +143,20 @@ function onWordMouseEnter(index: number) {
 function onWordMouseUp() {
   if (!isDragging.value) return
   isDragging.value = false
+  if (holdTimer) {
+    clearTimeout(holdTimer)
+    holdTimer = null
+  }
+
   if (anchorIndex.value === hoverIndex.value && anchorIndex.value !== null) {
-    const word = words.value[anchorIndex.value]
-    if (word) player.seek(wordStartTime(word))
-    clearSelection()
+    if (!singleWordSelected.value) {
+      // quick tap, not held — seek as before
+      const word = words.value[anchorIndex.value]
+      if (word) player.seek(wordStartTime(word))
+      clearSelection()
+    }
+    // else: held long enough on one word — leave the selection in place
+    // so the Annotation Menu picks it up as a valid single-word selection
   }
 }
 
@@ -141,11 +164,16 @@ function clearSelection() {
   anchorIndex.value = null
   hoverIndex.value = null
   pendingType.value = null
+  singleWordSelected.value = false
+  if (holdTimer) {
+    clearTimeout(holdTimer)
+    holdTimer = null
+  }
 }
 
 const selectionRange = computed(() => {
   if (anchorIndex.value === null || hoverIndex.value === null) return null
-  if (anchorIndex.value === hoverIndex.value) return null
+  if (anchorIndex.value === hoverIndex.value && !singleWordSelected.value) return null
   const lo = Math.min(anchorIndex.value, hoverIndex.value)
   const hi = Math.max(anchorIndex.value, hoverIndex.value)
   return { startWord: lo, endWord: hi }
@@ -491,7 +519,7 @@ function syncBackdropScroll() {
 
           <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 1rem;">
             Click a word to jump the audio there. Click and drag across words to select a range, then use the
-            annotation menu on the right. Esc clears selection. <strong>Tab</strong> switches between Annotate and Edit Text.
+            annotation menu on the right. <strong>Esc</strong> clears selection. <strong>Tab</strong> switches between Annotate and Edit Text.
           </p>
         </div>
 
