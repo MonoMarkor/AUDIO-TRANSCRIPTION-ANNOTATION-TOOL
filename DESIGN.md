@@ -152,3 +152,5 @@ None beyond what's listed above as deliberate, documented trade-offs.
   no real secret to protect. Committing them directly guarantees `docker
   compose up` works immediately after `git clone`, with no extra copy-the-
   example step that could be missed or fumbled.
+
+  "Frontend blocks navigation into REJECTED or unpaired items, enforcing the 15-second routing rule and pairing prerequisite at the UI layer, not just relying on backend status."

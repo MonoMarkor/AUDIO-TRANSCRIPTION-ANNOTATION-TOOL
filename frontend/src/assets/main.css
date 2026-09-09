@@ -221,3 +221,10 @@ tr:hover td {
   border-color: var(--accent);
   background-color: var(--bg-panel-raised);
 }
+
+.row-disabled {
+  opacity: 0.5;
+}
+.row-disabled td {
+  cursor: not-allowed !important;
+}

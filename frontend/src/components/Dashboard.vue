@@ -14,6 +14,31 @@ const showMatchedOnly = ref(false)
 const sortField = ref('createdAt')
 const sortOrder = ref('desc')
 
+const isDraggingAudio = ref(false)
+const isDraggingTranscript = ref(false)
+
+function handleAudioFiles(files: File[]) {
+  if (files.length === 0) return
+  uploadAudio(files).then(() => {
+    refresh()
+  })
+}
+
+function handleTranscriptFile(file: File) {
+  const reader = new FileReader()
+  reader.onload = () => {
+    try {
+      const rows = JSON.parse(reader.result as string)
+      uploadTranscripts(rows).then(() => {
+        refresh()
+      })
+    } catch {
+      alert('Invalid JSON file')
+    }
+  }
+  reader.readAsText(file)
+}
+
 const displayedItems = computed(() => {
   if (showMatchedOnly.value) {
     return items.value.filter((i) => i.audioPath && i.originalTranscript)
@@ -38,29 +63,29 @@ onMounted(refresh)
 function onAudioFilesSelected(event: Event) {
   const input = event.target as HTMLInputElement
   if (!input.files || input.files.length === 0) return
-  uploadAudio(Array.from(input.files)).then(() => {
-    input.value = ''
-    refresh()
-  })
+  handleAudioFiles(Array.from(input.files))
+  input.value = ''
 }
 
 function onTranscriptJsonSelected(event: Event) {
   const input = event.target as HTMLInputElement
   if (!input.files || input.files.length === 0) return
-  const file = input.files[0]
-  const reader = new FileReader()
-  reader.onload = () => {
-    try {
-      const rows = JSON.parse(reader.result as string)
-      uploadTranscripts(rows).then(() => {
-        input.value = ''
-        refresh()
-      })
-    } catch {
-      alert('Invalid JSON file')
-    }
-  }
-  reader.readAsText(file)
+  handleTranscriptFile(input.files[0])
+  input.value = ''
+}
+
+function onAudioDrop(event: DragEvent) {
+  isDraggingAudio.value = false
+  const files = event.dataTransfer?.files
+  if (!files || files.length === 0) return
+  handleAudioFiles(Array.from(files))
+}
+
+function onTranscriptDrop(event: DragEvent) {
+  isDraggingTranscript.value = false
+  const files = event.dataTransfer?.files
+  if (!files || files.length === 0) return
+  handleTranscriptFile(files[0])
 }
 
 async function submitPastedTranscript() {
@@ -133,6 +158,10 @@ function toggleMatchedOnly() {
     refresh() // unmatched flag changed (turned off), so re-fetch from server
   }
 }
+
+function isAnnotatable(item: Item) {
+  return item.status !== 'REJECTED' && !!item.audioPath && !!item.originalTranscript
+}
 </script>
 
 <template>
@@ -142,15 +171,36 @@ function toggleMatchedOnly() {
     <!-- Upload section -->
     <div class="panel" style="margin-bottom: 1.5rem;">
       <h2>Upload</h2>
-      <div style="display: flex; gap: 2rem; flex-wrap: wrap;">
-        <div>
+      <div style="display: flex; gap: 1.5rem; flex-wrap: wrap;">
+
+        <div
+          class="drop-zone"
+          :class="{ 'drop-zone-active': isDraggingAudio }"
+          @dragover.prevent="isDraggingAudio = true"
+          @dragleave.prevent="isDraggingAudio = false"
+          @drop.prevent="onAudioDrop"
+        >
           <label>Audio files (.wav, .mp3, .m4a)</label>
+          <p style="color: var(--text-secondary); font-size: 0.85rem; margin: 0.3rem 0;">
+            Drag & drop files here, or
+          </p>
           <input type="file" multiple accept=".wav,.mp3,.m4a" @change="onAudioFilesSelected" />
         </div>
-        <div>
+
+        <div
+          class="drop-zone"
+          :class="{ 'drop-zone-active': isDraggingTranscript }"
+          @dragover.prevent="isDraggingTranscript = true"
+          @dragleave.prevent="isDraggingTranscript = false"
+          @drop.prevent="onTranscriptDrop"
+        >
           <label>Transcript JSON file</label>
+          <p style="color: var(--text-secondary); font-size: 0.85rem; margin: 0.3rem 0;">
+            Drag & drop a file here, or
+          </p>
           <input type="file" accept=".json" @change="onTranscriptJsonSelected" />
         </div>
+
       </div>
 
       <div style="margin-top: 1rem;">
@@ -217,11 +267,17 @@ function toggleMatchedOnly() {
           </tr>
         </thead>
         <tbody>
-          <tr v-for="item in displayedItems" :key="item.id" @click="emit('selectItem', item.id)">
+          <tr
+            v-for="item in displayedItems"
+            :key="item.id"
+            :class="{ 'row-disabled': !isAnnotatable(item) }"
+            :title="!isAnnotatable(item) ? 'Only paired, non-rejected items can be opened' : ''"
+            @click="isAnnotatable(item) && emit('selectItem', item.id)"
+          >
             <td>{{ item.originalFileName }}</td>
             <td>{{ formatDuration(item.durationSeconds) }}</td>
             <td><span class="badge" :class="statusBadgeClass(item.status)">{{ item.status }}</span></td>
-             <td>
+            <td>
               <span class="badge" :class="pairedBadgeClass(item)">
                 {{ item.audioPath && item.originalTranscript ? 'Yes' : 'No' }}
               </span>
