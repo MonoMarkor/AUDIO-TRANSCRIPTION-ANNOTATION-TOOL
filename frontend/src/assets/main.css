@@ -207,3 +207,17 @@ tr:hover td {
 .btn-icon-large:hover {
   background-color: var(--accent-hover);
 }
+
+.drop-zone {
+  flex: 1;
+  min-width: 240px;
+  border: 2px dashed var(--border-subtle);
+  border-radius: 8px;
+  padding: 1rem;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.drop-zone-active {
+  border-color: var(--accent);
+  background-color: var(--bg-panel-raised);
+}
