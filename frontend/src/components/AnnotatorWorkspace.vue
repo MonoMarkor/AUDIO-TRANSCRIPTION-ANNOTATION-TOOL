@@ -348,7 +348,9 @@ async function setStatus(status: string) {
 async function goToNextPending() {
   await fetchItems({ status: 'PENDING' })
 
-  const pendingItems = allItems.value
+  const pendingItems = allItems.value.filter(
+    (i) => i.audioPath && i.originalTranscript
+  )
 
   if (pendingItems.length === 0) {
     alert('No pending items.')
