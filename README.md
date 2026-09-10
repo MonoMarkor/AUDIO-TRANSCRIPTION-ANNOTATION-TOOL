@@ -59,3 +59,14 @@ clean slate on the next run.
 
 See [DESIGN.md](./DESIGN.md) for the data model, key decisions, and known
 trade-offs/cuts.
+
+---
+
+# Audio Transcription Annotation Tool
+
+This app is used to help proof read and enrich AI generated Trasnscripts from audio generated in a clinical setting by medical staff. It also supports adding annotations to the text. At the end all corrected transcripts can be exported and used further for example to retrain a transcription model.
+
+![Dashboard](./assets/dashboard.png)
+
+
+![Annotation](./assets/Annotation.png)
