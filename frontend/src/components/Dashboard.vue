@@ -17,6 +17,37 @@ const sortOrder = ref('desc')
 const isDraggingAudio = ref(false)
 const isDraggingTranscript = ref(false)
 
+const transcriptPasteText = ref('')
+const transcriptPastePath = ref('')
+
+const selectedAudioIdForPairing = ref('')
+const selectedTranscriptIdForPairing = ref('')
+
+const displayedItems = computed(() => {
+  if (showMatchedOnly.value) {
+    return items.value.filter((i) => i.audioPath && i.originalTranscript)
+  }
+  return items.value
+})
+
+const unmatchedAudioItems = computed(() =>
+  items.value.filter((i) => i.audioPath && !i.originalTranscript),
+)
+const unmatchedTranscriptItems = computed(() =>
+  items.value.filter((i) => !i.audioPath && i.originalTranscript),
+)
+
+async function refresh() {
+  await fetchItems({
+    status: statusFilter.value || undefined,
+    unmatched: showUnmatchedOnly.value,
+    sort: sortField.value,
+    order: sortOrder.value,
+  })
+}
+
+onMounted(refresh)
+
 function handleAudioFiles(files: File[]) {
   if (files.length === 0) return
   uploadAudio(files).then(() => {
@@ -38,27 +69,6 @@ function handleTranscriptFile(file: File) {
   }
   reader.readAsText(file)
 }
-
-const displayedItems = computed(() => {
-  if (showMatchedOnly.value) {
-    return items.value.filter((i) => i.audioPath && i.originalTranscript)
-  }
-  return items.value
-})
-
-const transcriptPasteText = ref('')
-const transcriptPastePath = ref('')
-
-async function refresh() {
-  await fetchItems({
-    status: statusFilter.value || undefined,
-    unmatched: showUnmatchedOnly.value,
-    sort: sortField.value,
-    order: sortOrder.value,
-  })
-}
-
-onMounted(refresh)
 
 function onAudioFilesSelected(event: Event) {
   const input = event.target as HTMLInputElement
@@ -95,16 +105,6 @@ async function submitPastedTranscript() {
   transcriptPasteText.value = ''
   refresh()
 }
-
-const unmatchedAudioItems = computed(() =>
-  items.value.filter((i) => i.audioPath && !i.originalTranscript),
-)
-const unmatchedTranscriptItems = computed(() =>
-  items.value.filter((i) => !i.audioPath && i.originalTranscript),
-)
-
-const selectedAudioIdForPairing = ref('')
-const selectedTranscriptIdForPairing = ref('')
 
 async function doManualPair() {
   if (!selectedAudioIdForPairing.value || !selectedTranscriptIdForPairing.value) return

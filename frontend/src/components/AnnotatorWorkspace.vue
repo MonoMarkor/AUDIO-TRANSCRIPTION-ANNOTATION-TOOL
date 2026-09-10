@@ -6,11 +6,16 @@ import { useSpans } from '../composables/useSpans'
 import { useItems } from '../composables/useItems'
 import { SPAN_TYPES, normalizeUnit } from '../constants/spanTypes'
 
+interface WordToken {
+  text: string;
+  start: number;
+  end: number;
+  index: number
+}
 
 const props = defineProps<{ itemId: string }>()
 const itemId = toRef(props, 'itemId')
 const emit = defineEmits<{ back: []; goToItem: [itemId: string] }>()
-
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
 
 const {
@@ -29,16 +34,77 @@ const {
   createSpan,
   deleteSpan,
 } = useSpans(itemId)
+
 const { items: allItems, fetchItems } = useItems()
 
 const audioEl = ref<HTMLAudioElement | null>(null)
 const player = useAudioPlayer(audioEl)
+const displayTime = ref(0)
+let rafId: number | null = null
 
 const activeTab = ref<'annotate' | 'edit'>('annotate')
 const editableText = ref('')
 
-const displayTime = ref(0)
-let rafId: number | null = null
+const singleWordSelected = ref(false)
+let holdTimer: ReturnType<typeof setTimeout> | null = null
+const HOLD_THRESHOLD_MS = 250
+
+const audioUrl = computed(() => `${API_BASE}/api/items/${props.itemId}/audio`)
+
+const isDragging = ref(false)
+const anchorIndex = ref<number | null>(null)
+const hoverIndex = ref<number | null>(null)
+
+const pendingType = ref<string | null>(null)
+const formValues = ref<Record<string, any>>({})
+const activeTypeConfig = computed(() => SPAN_TYPES.find((t) => t.type === pendingType.value))
+
+const textareaEl = ref<HTMLTextAreaElement | null>(null)
+let pendingEdit: { position: number; deletedLength: number; insertedLength: number } | null = null
+
+const speechRateOverrideInput = ref<number | null>(null)
+const distanceOverrideInput = ref<string>('')
+
+const backdropEl = ref<HTMLDivElement | null>(null)
+
+const words = computed<WordToken[]>(() => {
+  const text = item.value?.correctedTranscript || ''
+  const tokens: WordToken[] = []
+  const regex = /\S+/g
+  let match
+  let i = 0
+  while ((match = regex.exec(text)) !== null) {
+    tokens.push({ text: match[0], start: match.index, end: match.index + match[0].length, index: i })
+    i++
+  }
+  return tokens
+})
+
+const selectionRange = computed(() => {
+  if (anchorIndex.value === null || hoverIndex.value === null) return null
+  if (anchorIndex.value === hoverIndex.value && !singleWordSelected.value) return null
+  const lo = Math.min(anchorIndex.value, hoverIndex.value)
+  const hi = Math.max(anchorIndex.value, hoverIndex.value)
+  return { startWord: lo, endWord: hi }
+})
+
+const highlightedHtml = computed(() => {
+  const text = editableText.value
+  const sorted = [...spans.value].sort((a, b) => a.startOffset - b.startOffset)
+  let html = ''
+  let cursor = 0
+
+  for (const span of sorted) {
+    if (span.startOffset < cursor || span.startOffset > text.length) continue
+    const end = Math.min(span.endOffset, text.length)
+    const config = SPAN_TYPES.find((t) => t.type === span.type)
+    html += escapeHtml(text.slice(cursor, span.startOffset))
+    html += `<span style="background-color: var(${config?.colorVar}); color: #1a1a1a; border-radius: 3px;">${escapeHtml(text.slice(span.startOffset, end))}</span>`
+    cursor = end
+  }
+  html += escapeHtml(text.slice(cursor)) + '\n'
+  return html
+})
 
 function tick() {
   if (audioEl.value) {
@@ -46,10 +112,6 @@ function tick() {
   }
   rafId = requestAnimationFrame(tick)
 }
-
-const singleWordSelected = ref(false)
-let holdTimer: ReturnType<typeof setTimeout> | null = null
-const HOLD_THRESHOLD_MS = 250
 
 async function loadItem() {
   player.reset()
@@ -82,24 +144,7 @@ watch(itemId, async () => {
   await loadItem()
 })
 
-const audioUrl = computed(() => `${API_BASE}/api/items/${props.itemId}/audio`)
-
 // ---------- Word tokenization for the Annotate tab ----------
-interface WordToken { text: string; start: number; end: number; index: number }
-
-const words = computed<WordToken[]>(() => {
-  const text = item.value?.correctedTranscript || ''
-  const tokens: WordToken[] = []
-  const regex = /\S+/g
-  let match
-  let i = 0
-  while ((match = regex.exec(text)) !== null) {
-    tokens.push({ text: match[0], start: match.index, end: match.index + match[0].length, index: i })
-    i++
-  }
-  return tokens
-})
-
 function wordStartTime(word: WordToken): number {
   const total = words.value.length
   const dur = player.duration.value || item.value?.durationSeconds || 0
@@ -117,10 +162,6 @@ function spanColorStyle(spanType: string) {
 }
 
 // ---------- Word selection ----------
-const isDragging = ref(false)
-const anchorIndex = ref<number | null>(null)
-const hoverIndex = ref<number | null>(null)
-
 function onWordMouseDown(index: number) {
   isDragging.value = true
   anchorIndex.value = index
@@ -171,14 +212,6 @@ function clearSelection() {
   }
 }
 
-const selectionRange = computed(() => {
-  if (anchorIndex.value === null || hoverIndex.value === null) return null
-  if (anchorIndex.value === hoverIndex.value && !singleWordSelected.value) return null
-  const lo = Math.min(anchorIndex.value, hoverIndex.value)
-  const hi = Math.max(anchorIndex.value, hoverIndex.value)
-  return { startWord: lo, endWord: hi }
-})
-
 function isWordSelected(index: number) {
   if (!selectionRange.value) return false
   return index >= selectionRange.value.startWord && index <= selectionRange.value.endWord
@@ -190,11 +223,6 @@ const selectedText = computed(() => {
 })
 
 // ---------- Tagging form ----------
-const pendingType = ref<string | null>(null)
-const formValues = ref<Record<string, any>>({})
-
-const activeTypeConfig = computed(() => SPAN_TYPES.find((t) => t.type === pendingType.value))
-
 function selectType(type: string) {
   if (!selectionRange.value) return
   pendingType.value = type
@@ -270,9 +298,6 @@ async function removeSpan(spanId: string) {
 }
 
 // ---------- Edit Text tab ----------
-const textareaEl = ref<HTMLTextAreaElement | null>(null)
-let pendingEdit: { position: number; deletedLength: number; insertedLength: number } | null = null
-
 function onBeforeInput(e: InputEvent) {
   const el = textareaEl.value
   if (!el) return
@@ -343,9 +368,6 @@ async function goToNextPending() {
 }
 
 // ---------- Recording conditions overrides ----------
-const speechRateOverrideInput = ref<number | null>(null)
-const distanceOverrideInput = ref<string>('')
-
 watch(conditions, (c) => {
   if (c) {
     speechRateOverrideInput.value = c.speechRateWpm.override
@@ -362,35 +384,17 @@ async function saveConditionsOverride() {
 
 document.addEventListener('mouseup', onWordMouseUp)
 document.addEventListener('keydown', onKeydown)
+
 onUnmounted(() => {
   document.removeEventListener('mouseup', onWordMouseUp)
   document.removeEventListener('keydown', onKeydown)
   if (rafId) cancelAnimationFrame(rafId)
 })
 
-const backdropEl = ref<HTMLDivElement | null>(null)
 
 function escapeHtml(str: string) {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 }
-
-const highlightedHtml = computed(() => {
-  const text = editableText.value
-  const sorted = [...spans.value].sort((a, b) => a.startOffset - b.startOffset)
-  let html = ''
-  let cursor = 0
-
-  for (const span of sorted) {
-    if (span.startOffset < cursor || span.startOffset > text.length) continue
-    const end = Math.min(span.endOffset, text.length)
-    const config = SPAN_TYPES.find((t) => t.type === span.type)
-    html += escapeHtml(text.slice(cursor, span.startOffset))
-    html += `<span style="background-color: var(${config?.colorVar}); color: #1a1a1a; border-radius: 3px;">${escapeHtml(text.slice(span.startOffset, end))}</span>`
-    cursor = end
-  }
-  html += escapeHtml(text.slice(cursor)) + '\n'
-  return html
-})
 
 function syncBackdropScroll() {
   if (backdropEl.value && textareaEl.value) {
