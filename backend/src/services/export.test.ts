@@ -13,6 +13,18 @@ describe('isExportable', () => {
   it('is not exportable when transcript is missing', () => {
     expect(isExportable({ audioPath: 'a.wav', originalTranscript: null })).toBe(false)
   })
+
+  it('excludes REJECTED items even when fully paired', () => {
+    expect(
+      isExportable({ audioPath: 'a.wav', originalTranscript: 'text', status: 'REJECTED' })
+    ).toBe(false)
+  })
+
+  it('includes PENDING items when fully paired', () => {
+    expect(
+      isExportable({ audioPath: 'a.wav', originalTranscript: 'text', status: 'PENDING' })
+    ).toBe(true)
+  })
 })
 
 describe('toExportLine', () => {
@@ -48,3 +60,5 @@ describe('toExportLine', () => {
     expect(result.spans[0].type).toBe('MEDICAL_TERM')
   })
 })
+
+
