@@ -32,6 +32,7 @@ model Item{
   distanceEstimateOverride String?
   speechRateWpm            Float?
   speechRateWpmOverride    Float?
+  recorderMetadata Json?
 
   originalTranscript  String?
   correctedTranscript  String?

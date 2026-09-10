@@ -12,6 +12,7 @@ router.get('/:id/conditions', async (req, res) => {
     sampleRate: item.sampleRate,
     channels: item.channels,
     bitDepth: item.bitDepth,
+    recorderMetadata: item.recorderMetadata,
     speechRateWpm: {
       derived: item.speechRateWpm,
       override: item.speechRateWpmOverride,

@@ -154,3 +154,5 @@ None beyond what's listed above as deliberate, documented trade-offs.
   example step that could be missed or fumbled.
 
   "Frontend blocks navigation into REJECTED or unpaired items, enforcing the 15-second routing rule and pairing prerequisite at the UI layer, not just relying on backend status."
+
+  "bext/LIST INFO extraction implemented and verified against the parsing library's output format; none of the demo/test audio files used happened to carry this metadata, so the UI element doesn't appear in the current demo data — verified the code path is correct via code review."

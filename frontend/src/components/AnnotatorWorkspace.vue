@@ -471,6 +471,9 @@ function syncBackdropScroll() {
         <span><strong>Sample rate:</strong> {{ conditions.sampleRate }} Hz</span>
         <span><strong>Channels:</strong> {{ conditions.channels }}</span>
         <span><strong>Bit depth:</strong> {{ conditions.bitDepth ?? '—' }}</span>
+        <span v-if="conditions.recorderMetadata">
+          <strong>Recorder metadata:</strong> {{ JSON.stringify(conditions.recorderMetadata) }}
+        </span>
         <span style="border-left: 1px solid var(--border-subtle); padding-left: 1rem;">
           <strong>Speech rate:</strong> derived {{ conditions.speechRateWpm.derived?.toFixed(1) ?? '—' }} wpm
         </span>
