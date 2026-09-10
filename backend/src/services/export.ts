@@ -46,6 +46,6 @@ export function toExportLine(item: ExportItem) {
   }
 }
 
-export function isExportable(item: { audioPath: string | null; originalTranscript: string | null }): boolean {
-  return item.audioPath !== null && item.originalTranscript !== null
+export function isExportable(item: { audioPath: string | null; originalTranscript: string | null; status: string }): boolean {
+  return item.audioPath !== null && item.originalTranscript !== null && item.status !== 'REJECTED'
 }
